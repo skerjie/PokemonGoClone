@@ -18,7 +18,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
   
   override func viewDidLoad() {
     super.viewDidLoad()
-
+    
     pokemonsArray = getAllPokemons()
     manager.delegate = self
     if CLLocationManager.authorizationStatus() == .authorizedWhenInUse {
@@ -83,6 +83,37 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     } else {
       manager.startUpdatingLocation() // прекращаем обновлять и экономим батарею
     }
+  }
+  
+  func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+    mapView.deselectAnnotation(view.annotation!, animated: true)
+    
+    if view.annotation! is MKUserLocation {
+      return
+    }
+    
+    // если покемон в области пользователя, то его можно словить, иначе нельзя
+    let region = MKCoordinateRegionMakeWithDistance(view.annotation!.coordinate, 200, 200)
+    mapView.setRegion(region, animated: true)
+    
+    Timer.scheduledTimer(withTimeInterval: 1, repeats: false, block: {(timer) in // при большом зуме проверяем действиельно ли покемон близко
+      if let coord = self.manager.location?.coordinate {
+        if MKMapRectContainsPoint(mapView.visibleMapRect, MKMapPointForCoordinate(coord)) {
+          
+          let pokemon = (view.annotation as! PokeAnnotation).pokemon
+          pokemon.caught = true
+          (UIApplication.shared.delegate as! AppDelegate).saveContext()
+          mapView.removeAnnotation(view.annotation!) // удаляем аннотацию если словили покемона
+          
+          
+          print("Can catch the pokemon")
+        } else {
+          
+        }
+        
+        print("annotation tapped")
+      }
+    })
   }
   
   @IBAction func centerTapped(_ sender: Any) {
